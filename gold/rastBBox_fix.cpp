@@ -83,6 +83,35 @@ void rastBBox_uPoly_fix( u_Poly< long , ushort >& poly,
 
 }
 
+long find_max(u_Poly< long , ushort >& poly,int x_or_y, long r_shift, int ss_w_lg2){
+  int i;
+  long max = 0;
+  long rounded_value = 0;
+
+  for(i = 0; i<poly.vertices ; i++){
+     rounded_value = (poly.v[i].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
+  			       ss_w_lg2 ); 
+    max = rounded_value > max ? rounded_value : max;
+  }
+  
+  return max;
+}
+
+long find_min(u_Poly< long , ushort >& poly,int x_or_y, long r_shift, int ss_w_lg2){
+  int i;
+  long rounded_value; 
+  long min = (poly.v[0].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
+                               ss_w_lg2 );
+
+  for(i = 0; i<poly.vertices ; i++){
+     rounded_value = (poly.v[i].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
+  			       ss_w_lg2 ); 
+    min = rounded_value < min ? rounded_value : min;
+  }
+  
+  return min;
+}
+
 void rastBBox_bbox_fix( u_Poly< long , ushort >& poly , 
 			       long& ll_x,
 			       long& ll_y,
@@ -150,30 +179,33 @@ void rastBBox_bbox_fix( u_Poly< long , ushort >& poly ,
   /   additionally it should be noted that whether a poly is 
   /   a quad or triangle can be determined by examing poly.vertices
   */
-
   ur_x = 0 ;
   ur_y = 0 ;
   ll_x = 0 ;
   ll_y = 0 ;
-
+  //valid = false;
+  valid = true; 
+  
   /////
   ///// Bounding Box Function Goes Here
   ///// 
   
   ///// PLACE YOUR CODE HERE
-
-
-  
-  
-  
-  
-  
+  //calculate clamped bbox
+  ur_x = find_max(poly, 0, r_shift, ss_w_lg2);
+  ur_y = find_max(poly, 1, r_shift, ss_w_lg2);
+  ll_x = find_min(poly, 0, r_shift, ss_w_lg2);
+  ll_y = find_min(poly, 1, r_shift, ss_w_lg2);
+ 
+  // clip bbox to visible screen space
+  ur_x = ur_x > screen_w ? screen_w : ur_x;
+  ur_y = ur_y > screen_h ? screen_h : ur_y;
+  ll_x = ll_x < 0 ? 0 : ll_x;
+  ll_y = ll_y < 0 ? 0 : ll_y;
 
   /////
   ///// Bounding Box Function Goes Here
   ///// 
-
-
 }
 
 
@@ -205,10 +237,55 @@ int rastBBox_stest_fix( u_Poly< long , ushort >& poly,
   /
   */
 
-
-
   int result = 0 ; // Default to miss state
+  long v0_x, v0_y, v1_x, v1_y, v2_x, v2_y, v3_x, v3_y;  
+  long dist0, dist1, dist2, dist3;
+  bool b0,b1,b2,b3;
+  bool triRes;
 
+  if(poly.vertices == 3) {
+    v0_x = poly.v[0].x[0] - s_x;
+    v0_y = poly.v[0].x[1] - s_y;
+    v1_x = poly.v[1].x[0] - s_x;
+    v1_y = poly.v[1].x[1] - s_y;
+    v2_x = poly.v[2].x[0] - s_x;
+    v2_y = poly.v[2].x[1] - s_y;
+
+    dist0 = v0_x * v1_y - v1_x * v0_y; //0-1
+    dist1 = v1_x * v2_y - v2_x * v1_y; //1-2
+    dist2 = v2_x * v0_y - v0_x * v2_y; //2-3
+  
+    b0 = dist0 <= 0;
+    b1 = dist1 <= 0;
+    b2 = dist2 <= 0;
+
+    triRes = b0 && b1 && b2; 
+
+  }
+  else if (poly.vertices == 4){
+    v0_x = poly.v[0].x[0] - s_x;
+    v0_y = poly.v[0].x[1] - s_y;
+    v1_x = poly.v[1].x[0] - s_x;
+    v1_y = poly.v[1].x[1] - s_y;
+    v2_x = poly.v[2].x[0] - s_x;
+    v2_y = poly.v[2].x[1] - s_y;
+    v3_x = poly.v[3].x[0] - s_x;
+    v3_y = poly.v[3].x[1] - s_y;
+
+    dist0 = v0_x * v1_y - v1_x * v0_y; //0-1
+    dist1 = v1_x * v2_y - v2_x * v1_y; //1-2
+    dist2 = v2_x * v3_y - v3_x * v2_y; //2-3
+    dist3 = v3_x * v0_y - v0_x * v3_y; //3-4
+ 
+    b0 = dist0 <=0;
+    b1 = dist1 <=0;
+    b2 = dist2 <=0;
+    b3 = dist3 <=0;
+
+    triRes = b0 && b1 && b2 && b3;
+  }else{
+    triRes = 0;
+  }
   /////
   ///// Sample Test Function Goes Here
   /////
@@ -219,7 +296,7 @@ int rastBBox_stest_fix( u_Poly< long , ushort >& poly,
   
   
   
-  
+    
   
   
   
@@ -231,7 +308,7 @@ int rastBBox_stest_fix( u_Poly< long , ushort >& poly,
   ///// Sample Test Function Goes Here
   /////
 
-  
+  result = triRes; 
   return (result-1); //Return 0 if hit, otherwise return -1
 }
 
