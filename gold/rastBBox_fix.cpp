@@ -86,7 +86,8 @@ void rastBBox_uPoly_fix( u_Poly< long , ushort >& poly,
 long find_max(u_Poly< long , ushort >& poly,int x_or_y, long r_shift, int ss_w_lg2){
   int i;
   long max = 0;
-  long rounded_value = 0;
+  long rounded_value = (poly.v[0].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
+                               ss_w_lg2 );;
 
   for(i = 0; i<poly.vertices ; i++){
      rounded_value = (poly.v[i].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
@@ -203,6 +204,12 @@ void rastBBox_bbox_fix( u_Poly< long , ushort >& poly ,
   ll_x = ll_x < 0 ? 0 : ll_x;
   ll_y = ll_y < 0 ? 0 : ll_y;
 
+  // check to see if the polygon is on screen
+  if( ll_x > screen_w ||  ll_y > screen_h ||
+      ur_x < 0        ||  ur_y < 0){
+    valid = false;
+  }
+
   /////
   ///// Bounding Box Function Goes Here
   ///// 
@@ -256,7 +263,9 @@ int rastBBox_stest_fix( u_Poly< long , ushort >& poly,
     dist2 = v2_x * v0_y - v0_x * v2_y; //2-3
   
     b0 = dist0 <= 0;
-    b1 = dist1 <= 0;
+
+//    b1 = dist1 <= 0;
+    b1 = dist1 < 0;
     b2 = dist2 <= 0;
 
     triRes = b0 && b1 && b2; 
@@ -284,26 +293,9 @@ int rastBBox_stest_fix( u_Poly< long , ushort >& poly,
 
     triRes = b0 && b1 && b2 && b3;
   }else{
+  //we should never get here
     triRes = 0;
   }
-  /////
-  ///// Sample Test Function Goes Here
-  /////
-
-  ///// PLACE YOUR CODE HERE
-  
-  
-  
-  
-  
-    
-  
-  
-  
-  
-  
-  
-
   /////
   ///// Sample Test Function Goes Here
   /////
