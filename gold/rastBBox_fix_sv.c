@@ -3,6 +3,36 @@
 #include <limits.h>
 #include <assert.h>
 
+long find_max(u_Poly & poly,int x_or_y, long r_shift, int ss_w_lg2){
+  int i;
+  long max = 0;
+  long rounded_value = (poly.v[0].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
+                               ss_w_lg2 );;
+
+  for(i = 0; i<poly.vertices ; i++){
+     rounded_value = (poly.v[i].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
+                               ss_w_lg2 );
+    max = rounded_value > max ? rounded_value : max;
+  }
+
+  return max;
+}
+
+long find_min(u_Poly & poly,int x_or_y, long r_shift, int ss_w_lg2){
+  int i;
+  long rounded_value;
+  long min = (poly.v[0].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
+                               ss_w_lg2 );
+
+  for(i = 0; i<poly.vertices ; i++){
+     rounded_value = (poly.v[i].x[x_or_y]  >> ( r_shift - ss_w_lg2 )) << ( r_shift -
+                               ss_w_lg2 );
+    min = rounded_value < min ? rounded_value : min;
+  }
+
+  return min;
+}
+
 //Given a uPoly and Bbox check that Bbox is good bound 
 // on uPoly
 int rastBBox_bbox_check( int   v0_x,     //uPoly
@@ -52,8 +82,36 @@ int rastBBox_bbox_check( int   v0_x,     //uPoly
   //Copy Past C++ Bounding Box Function ****BEGIN****
   //
   // note that bool,true, and false are not in c
+ 
+  ur_x = 0 ;
+  ur_y = 0 ;
+  ll_x = 0 ;
+  ll_y = 0 ;
+  //valid = false;
+  valid = 1;
 
+  /////
+  ///// Bounding Box Function Goes Here
+  ///// 
 
+  ///// PLACE YOUR CODE HERE
+  //calculate clamped bbox
+  ur_x = find_max(poly, 0, r_shift, ss_w_lg2);
+  ur_y = find_max(poly, 1, r_shift, ss_w_lg2);
+  ll_x = find_min(poly, 0, r_shift, ss_w_lg2);
+  ll_y = find_min(poly, 1, r_shift, ss_w_lg2);
+
+  // clip bbox to visible screen space
+  ur_x = ur_x > screen_w ? screen_w : ur_x;
+  ur_y = ur_y > screen_h ? screen_h : ur_y;
+  ll_x = ll_x < 0 ? 0 : ll_x;
+  ll_y = ll_y < 0 ? 0 : ll_y;
+
+  // check to see if the polygon is on screen
+  if( ll_x > screen_w ||  ll_y > screen_h ||
+      ur_x < 0        ||  ur_y < 0){
+    valid = 0;
+  }
 			  
 
   //
@@ -142,7 +200,47 @@ int rastBBox_stest_check( int   v0_x,      //uPoly
   //
   // note that bool,true, and false are not in c
 
-  
+  int quad = poly.vertices == 4;
+
+  int result = 0 ; // Default to miss state
+  long v0_x, v0_y, v1_x, v1_y, v2_x, v2_y, v3_x, v3_y;
+  long dist0, dist1, dist2, dist3, dist4, dist5;
+  int b0,b1,b2,b3,b4,b5;
+  int triRes,quadRes;
+
+  v0_x = poly.v[0].x[0] - s_x;
+  v0_y = poly.v[0].x[1] - s_y;
+  v1_x = poly.v[1].x[0] - s_x;
+  v1_y = poly.v[1].x[1] - s_y;
+  v2_x = poly.v[2].x[0] - s_x;
+  v2_y = poly.v[2].x[1] - s_y;
+  v3_x = poly.v[3].x[0] - s_x;
+  v3_y = poly.v[3].x[1] - s_y;
+
+  dist0 = v0_x * v1_y - v1_x * v0_y; //0-1
+  dist1 = v1_x * v2_y - v2_x * v1_y; //1-2
+  dist2 = v2_x * v3_y - v3_x * v2_y; //2-3
+  dist3 = v3_x * v0_y - v0_x * v3_y; //3-4
+  dist4 = v1_x * v3_y - v3_x * v1_y; //1-3
+  dist5 = v2_x * v0_y - v0_x * v2_y; //2-0
+
+  b0 = dist0 <=0;
+  b1 = dist1 < 0;
+  b2 = dist2 < 0;
+  b3 = dist3 <=0;
+  b4 = dist4 < 0;
+  b5 = dist5 <=0;
+
+  // Triangle
+  triRes = b0 && b1 && b5;
+
+  // Quad
+  quadRes = (b1 && b2 && !b4)
+          ||(!b1 && !b2 && b4)
+          ||(b0 && b3 && b4)
+          ||(!b0 && !b3 && !b4);
+
+  result = ( ( triRes && !quad ) || (quad && quadRes) );
 
   //
   //Copy Past C++ Sample Test Function ****END****
@@ -197,7 +295,35 @@ int rastBBox_check( int   v0_x,      //uPoly
 
 
   
-  
+   ur_x = 0 ;
+  ur_y = 0 ;
+  ll_x = 0 ;
+  ll_y = 0 ;
+  //valid = 0;
+  valid = 1;
+
+  /////
+  ///// Bounding Box Function Goes Here
+  ///// 
+
+  ///// PLACE YOUR CODE HERE
+  //calculate clamped bbox
+  ur_x = find_max(poly, 0, r_shift, ss_w_lg2);
+  ur_y = find_max(poly, 1, r_shift, ss_w_lg2);
+  ll_x = find_min(poly, 0, r_shift, ss_w_lg2);
+  ll_y = find_min(poly, 1, r_shift, ss_w_lg2);
+
+  // clip bbox to visible screen space
+  ur_x = ur_x > screen_w ? screen_w : ur_x;
+  ur_y = ur_y > screen_h ? screen_h : ur_y;
+  ll_x = ll_x < 0 ? 0 : ll_x;
+  ll_y = ll_y < 0 ? 0 : ll_y;
+
+  // check to see if the polygon is on screen
+  if( ll_x > screen_w ||  ll_y > screen_h ||
+      ur_x < 0        ||  ur_y < 0){
+    valid = 0;
+  } 
   
   
   
@@ -226,16 +352,47 @@ int rastBBox_check( int   v0_x,      //uPoly
       //
       // note that bool,true, and false are not in c
       
+  int quad = poly.vertices == 4;
 
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
+  int result = 0 ; // Default to miss state
+  long v0_x, v0_y, v1_x, v1_y, v2_x, v2_y, v3_x, v3_y;
+  long dist0, dist1, dist2, dist3, dist4, dist5;
+  int b0,b1,b2,b3,b4,b5;
+  int triRes,quadRes;
+
+  v0_x = poly.v[0].x[0] - s_x;
+  v0_y = poly.v[0].x[1] - s_y;
+  v1_x = poly.v[1].x[0] - s_x;
+  v1_y = poly.v[1].x[1] - s_y;
+  v2_x = poly.v[2].x[0] - s_x;
+  v2_y = poly.v[2].x[1] - s_y;
+  v3_x = poly.v[3].x[0] - s_x;
+  v3_y = poly.v[3].x[1] - s_y;
+
+  dist0 = v0_x * v1_y - v1_x * v0_y; //0-1
+  dist1 = v1_x * v2_y - v2_x * v1_y; //1-2
+  dist2 = v2_x * v3_y - v3_x * v2_y; //2-3
+  dist3 = v3_x * v0_y - v0_x * v3_y; //3-4
+  dist4 = v1_x * v3_y - v3_x * v1_y; //1-3
+  dist5 = v2_x * v0_y - v0_x * v2_y; //2-0
+
+  b0 = dist0 <=0;
+  b1 = dist1 < 0;
+  b2 = dist2 < 0;
+  b3 = dist3 <=0;
+  b4 = dist4 < 0;
+  b5 = dist5 <=0;
+
+  // Triangle
+  triRes = b0 && b1 && b5;
+
+  // Quad
+  quadRes = (b1 && b2 && !b4)
+          ||(!b1 && !b2 && b4)
+          ||(b0 && b3 && b4)
+          ||(!b0 && !b3 && !b4);
+
+  result = ( ( triRes && !quad ) || (quad && quadRes) );	  
   
       //
       //Copy Past C++ Sample Test Function ****END****
