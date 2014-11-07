@@ -180,6 +180,8 @@ void rastBBox_bbox_fix( u_Poly< long , ushort >& poly ,
   /   additionally it should be noted that whether a poly is 
   /   a quad or triangle can be determined by examing poly.vertices
   */
+
+
   ur_x = 0 ;
   ur_y = 0 ;
   ll_x = 0 ;
@@ -243,64 +245,47 @@ int rastBBox_stest_fix( u_Poly< long , ushort >& poly,
   /     miss and 1 for hit
   /
   */
-
+  bool quad = poly.vertices == 4;
+  	
   int result = 0 ; // Default to miss state
   long v0_x, v0_y, v1_x, v1_y, v2_x, v2_y, v3_x, v3_y;  
-  long dist0, dist1, dist2, dist3;
-  bool b0,b1,b2,b3;
-  bool triRes;
+  long dist0, dist1, dist2, dist3, dist4, dist5;
+  bool b0,b1,b2,b3,b4,b5;
+  bool triRes,quadRes;
 
-  if(poly.vertices == 3) {
-    v0_x = poly.v[0].x[0] - s_x;
-    v0_y = poly.v[0].x[1] - s_y;
-    v1_x = poly.v[1].x[0] - s_x;
-    v1_y = poly.v[1].x[1] - s_y;
-    v2_x = poly.v[2].x[0] - s_x;
-    v2_y = poly.v[2].x[1] - s_y;
+  v0_x = poly.v[0].x[0] - s_x;
+  v0_y = poly.v[0].x[1] - s_y;
+  v1_x = poly.v[1].x[0] - s_x;
+  v1_y = poly.v[1].x[1] - s_y;
+  v2_x = poly.v[2].x[0] - s_x;
+  v2_y = poly.v[2].x[1] - s_y;
+  v3_x = poly.v[3].x[0] - s_x;
+  v3_y = poly.v[3].x[1] - s_y;
 
-    dist0 = v0_x * v1_y - v1_x * v0_y; //0-1
-    dist1 = v1_x * v2_y - v2_x * v1_y; //1-2
-    dist2 = v2_x * v0_y - v0_x * v2_y; //2-3
-  
-    b0 = dist0 <= 0;
+  dist0 = v0_x * v1_y - v1_x * v0_y; //0-1
+  dist1 = v1_x * v2_y - v2_x * v1_y; //1-2
+  dist2 = v2_x * v3_y - v3_x * v2_y; //2-3
+  dist3 = v3_x * v0_y - v0_x * v3_y; //3-4
+  dist4 = v1_x * v3_y - v3_x * v1_y; //1-3
+  dist5 = v2_x * v0_y - v0_x * v2_y; //2-0
+   
+  b0 = dist0 <=0;
+  b1 = dist1 < 0;
+  b2 = dist2 < 0;
+  b3 = dist3 <=0;
+  b4 = dist4 < 0;
+  b5 = dist5 <=0;
 
-//    b1 = dist1 <= 0;
-    b1 = dist1 < 0;
-    b2 = dist2 <= 0;
+  // Triangle
+  triRes = b0 && b1 && b5;
 
-    triRes = b0 && b1 && b2; 
-
-  }
-  else if (poly.vertices == 4){
-    v0_x = poly.v[0].x[0] - s_x;
-    v0_y = poly.v[0].x[1] - s_y;
-    v1_x = poly.v[1].x[0] - s_x;
-    v1_y = poly.v[1].x[1] - s_y;
-    v2_x = poly.v[2].x[0] - s_x;
-    v2_y = poly.v[2].x[1] - s_y;
-    v3_x = poly.v[3].x[0] - s_x;
-    v3_y = poly.v[3].x[1] - s_y;
-
-    dist0 = v0_x * v1_y - v1_x * v0_y; //0-1
-    dist1 = v1_x * v2_y - v2_x * v1_y; //1-2
-    dist2 = v2_x * v3_y - v3_x * v2_y; //2-3
-    dist3 = v3_x * v0_y - v0_x * v3_y; //3-4
+  // Quad
+  quadRes = (b1 && b2 && !b4)
+          ||(!b1 && !b2 && b4)
+          ||(b0 && b3 && b4)
+          ||(!b0 && !b3 && !b4);
  
-    b0 = dist0 <=0;
-    b1 = dist1 <=0;
-    b2 = dist2 <=0;
-    b3 = dist3 <=0;
-
-    triRes = b0 && b1 && b2 && b3;
-  }else{
-  //we should never get here
-    triRes = 0;
-  }
-  /////
-  ///// Sample Test Function Goes Here
-  /////
-
-  result = triRes; 
+  result = ( ( triRes && !quad ) || (quad && quadRes) );
   return (result-1); //Return 0 if hit, otherwise return -1
 }
 
